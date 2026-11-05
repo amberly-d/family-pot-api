@@ -56,7 +56,14 @@ pnpm check   # format:check, lint, typecheck, test, build
 `pnpm check` is the same command CI runs; the GitHub Actions workflow uses a frozen
 lockfile on Node 22.
 
-API docs available at `/api/docs` (Swagger) once the server is running.
+Once the server is running (default port `4000`):
+
+| URL | What |
+|---|---|
+| `http://localhost:4000/api/v1/health` | Health check, returns `{ "status": "ok" }` |
+| `http://localhost:4000/api/docs` | Swagger UI (JSON at `/api/docs-json`) |
+
+All endpoints live under the `/api/v1` prefix. Browsers may only call the API from the origins listed in `CORS_ORIGIN` (credentials are allowed for those origins; with an empty list no cross-origin access is granted).
 
 ## Environment variables
 
