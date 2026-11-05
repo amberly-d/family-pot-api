@@ -53,6 +53,9 @@ Run everything CI runs:
 pnpm check   # format:check, lint, typecheck, test, build
 ```
 
+`pnpm check` is the same command CI runs; the GitHub Actions workflow uses a frozen
+lockfile on Node 22.
+
 API docs available at `/api/docs` (Swagger) once the server is running.
 
 ## Environment variables
