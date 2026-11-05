@@ -142,6 +142,31 @@ Password policy and handling:
 - A duplicate email returns `409` with the same generic message as any other registration conflict (`Registration could not be completed.`), and the password is hashed before the lookup so a duplicate costs the same time as a new account.
 - Unknown request fields are rejected with `400`.
 
+### `POST /api/v1/auth/login` and `GET /api/v1/auth/me`
+
+`POST /api/v1/auth/login` with `{ "email", "password" }` returns `200` with `{ "accessToken", "tokenType": "Bearer", "expiresIn" }`. The access token is a JWT (HS256) signed with `JWT_ACCESS_SECRET`, valid for `JWT_ACCESS_TTL` (default `15m`), carrying only the user id as `sub`. Refresh tokens are a separate issue.
+
+A wrong password and an unknown email return the identical `401` (`Invalid email or password.`). Both paths run one argon2 verification (an unknown email verifies against a throwaway hash), so the response time does not reveal whether an email is registered.
+
+`GET /api/v1/auth/me` returns `{ id, email }` for the bearer token in the `Authorization` header. In Swagger, click **Authorize** and paste the token.
+
+### Protecting an endpoint
+
+Import `AuthModule` in the module that declares your controller and add one decorator:
+
+```ts
+@Auth()
+@Controller({ path: 'recipients', version: '1' })
+export class RecipientsController {
+  @Get()
+  list(@CurrentUser() user: AuthUser) {
+    // user.id is the authenticated user
+  }
+}
+```
+
+`@Auth()` can go on a controller or on a single route. Without a valid token the response is `401`. Missing, malformed, expired, tampered or wrongly signed tokens (including `alg: none`), and tokens for users that no longer exist, are all rejected the same way. The secret is read only from configuration (`AppConfigService`), and the algorithm is pinned to HS256.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the shared guidelines in family-pot-docs. Issues are
