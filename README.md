@@ -127,6 +127,21 @@ Entities live in `*.entity.ts` files and extend `AppBaseEntity` (uuid `id`, `cre
 
 Tests never read `DATABASE_URL`: `test/setup.ts` replaces it with `DATABASE_URL_TEST`. `pnpm test:e2e` needs Postgres reachable there; CI runs it against a Postgres 16 service container (`.github/workflows/integration.yml`).
 
+## Authentication
+
+### `POST /api/v1/auth/register`
+
+Body `{ "email": "...", "password": "..." }`; returns `201` with `{ "id", "email" }` only. Documented in Swagger at `/api/docs`.
+
+Password policy and handling:
+
+- Length **12 to 128** characters. The maximum stops a huge password from being used to burn CPU and memory while hashing.
+- Hashed with **argon2id** (the `argon2` package) at the OWASP minimum configuration: 19 MiB memory, 2 iterations, 1 lane. The parameters are encoded in each stored hash, so they can be raised later and old hashes keep verifying.
+- Only the hash is stored (`users.passwordHash`). Passwords and hashes are never returned or logged.
+- Emails are trimmed and stored lowercase, and are unique, so registration is case-insensitive.
+- A duplicate email returns `409` with the same generic message as any other registration conflict (`Registration could not be completed.`), and the password is hashed before the lookup so a duplicate costs the same time as a new account.
+- Unknown request fields are rejected with `400`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the shared guidelines in family-pot-docs. Issues are
