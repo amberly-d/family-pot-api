@@ -1,5 +1,10 @@
-// ConfigModule validates as soon as AppModule is imported. Give tests safe
-// placeholder values before that happens; unit tests do not connect to Postgres.
-process.env.DATABASE_URL ??=
+import { loadEnvFiles } from '../src/database/load-env.js';
+
+// Tests only ever talk to DATABASE_URL_TEST. DATABASE_URL is overwritten so
+// that nothing under test can reach the development or shared database.
+loadEnvFiles();
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL_TEST ??
   'postgres://family_pot:family_pot@localhost:5432/family_pot_test';
 process.env.JWT_ACCESS_SECRET ??= 'test-secret-that-is-at-least-32-characters';

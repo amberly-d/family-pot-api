@@ -1,0 +1,43 @@
+name: Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Postgres integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: family_pot
+          POSTGRES_PASSWORD: family_pot
+          POSTGRES_DB: family_pot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U family_pot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://family_pot:family_pot@localhost:5432/family_pot_test
+      DATABASE_URL_TEST: postgres://family_pot:family_pot@localhost:5432/family_pot_test
+      JWT_ACCESS_SECRET: ci-secret-that-is-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Format, lint, typecheck, unit tests and build run in ci.yml (pnpm check).
+      - run: pnpm migration:run
+      - run: pnpm test:e2e

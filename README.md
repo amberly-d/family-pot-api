@@ -81,6 +81,45 @@ For local Postgres, the `DATABASE_URL` usually looks like
 `postgres://family_pot:family_pot@localhost:5432/family_pot`. Never commit `.env*` files;
 only `.env.example` belongs in the repository.
 
+## Database and migrations
+
+The API uses TypeORM with Postgres. `synchronize` is permanently off: schema changes only happen through migrations.
+
+### Create a local database
+
+1. Install Postgres 16 or newer locally (Docker is optional).
+2. Create a role and an empty database, with `psql` or pgAdmin:
+   - **psql:** `createuser --pwprompt family_pot` then `createdb -O family_pot family_pot` and `createdb -O family_pot family_pot_test`
+   - **pgAdmin:** right-click *Login/Group Roles* > *Create* (name `family_pot`, set a password, enable *Can login*); right-click *Databases* > *Create* (name `family_pot`, owner `family_pot`). Repeat for `family_pot_test`.
+3. Build the URL as `postgres://<user>:<password>@<host>:<port>/<database>` and put it in `.env.local`:
+
+```bash
+DATABASE_URL=postgres://family_pot:your-password@localhost:5432/family_pot
+DATABASE_URL_TEST=postgres://family_pot:your-password@localhost:5432/family_pot_test
+```
+
+For Neon or Render use the connection string from their dashboard and set `DATABASE_SSL=true`.
+If the database is unreachable the app stops at startup with a message naming the host and database (never the password).
+
+### Migrations
+
+| Command | What it does |
+|---|---|
+| `pnpm migration:run` | Apply pending migrations |
+| `pnpm migration:generate src/database/migrations/<Name>` | Generate a migration from entity changes |
+| `pnpm migration:revert` | Undo the last migration (guarded) |
+| `pnpm db:test:reset` | Drop everything in `DATABASE_URL_TEST` and re-migrate (guarded) |
+
+Entities live in `*.entity.ts` files and extend `AppBaseEntity` (uuid `id`, `createdAt`, `updatedAt`). Commit an entity and its migration together, and never edit a merged migration.
+
+### Destructive-script guard
+
+`migration:revert`, `db:test:reset` and any seed script refuse to run unless the database host is `localhost`, `127.0.0.1` or `::1`, or `ALLOW_REMOTE_DB_RESET=true`. A seed script must run `node dist/database/guard-cli.js seed &&` first (or call `assertDestructiveAllowed`).
+
+### Tests
+
+Tests never read `DATABASE_URL`: `test/setup.ts` replaces it with `DATABASE_URL_TEST`. `pnpm test:e2e` needs Postgres reachable there; CI runs it against a Postgres 16 service container (`.github/workflows/integration.yml`).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the shared guidelines in family-pot-docs. Issues are
