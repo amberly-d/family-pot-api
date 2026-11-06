@@ -8,3 +8,4 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL_TEST ??
   'postgres://family_pot:family_pot@localhost:5432/family_pot_test';
 process.env.JWT_ACCESS_SECRET ??= 'test-secret-that-is-at-least-32-characters';
+process.env.CORS_ORIGIN = 'http://localhost:3000';
